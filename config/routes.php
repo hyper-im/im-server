@@ -21,6 +21,6 @@ Router::addServer('http', function () {
     Router::get('/user/logout', 'App\Http\Im\UserController@logout');
 });
 
-//Router::addServer('ws', function () {
-//    Router::get('/im', 'App\Ws\ImController');
-//});
+Router::addServer('ws', function () {
+    Router::get('/im', 'App\Ws\ImController');
+});
