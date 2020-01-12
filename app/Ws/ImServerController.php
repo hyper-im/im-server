@@ -33,6 +33,7 @@ class ImServerController
     }
 
     public function message(WebSocketServer $server, Frame $frame){
+        var_dump($frame->data);
         $imRequest = json_decode($frame->data, true);
         $action = $imRequest['action'];
         switch ($action){
@@ -46,13 +47,12 @@ class ImServerController
                 //检测频道是否存在
                 break;
             case ImActionType::CHAT_BROADCAST;
-                $msg['data'] = "FD={$frame->fd}的大神, 发送了一条广播信息!";
-                $pushData = Tool::encode($msg);
+                $msg= "FD={$frame->fd}的大神说: ".$imRequest['data'];
                 foreach ($server->connections as $fd){
                     if($fd == $frame->fd){
                         continue;
                     }
-                    $server->push($fd, $pushData);
+                    $server->push($fd, $msg);
                 }
                 break;
             default:
