@@ -44,7 +44,7 @@ class ConsulRegisterListener implements ListenerInterface
         $options = [];
         $consul_uri = config('consul')['uri'];
         try{
-            Requests::put($consul_uri."/v1/kv/im_server", $headers,$im_server, $options);
+            Requests::put($consul_uri."/v1/kv/im_server", $headers,json_encode($im_server), $options);
         }catch (\Exception $e){
             exit($e->getMessage());
         }
@@ -58,7 +58,11 @@ class ConsulRegisterListener implements ListenerInterface
 
         foreach ($server['servers'] as $ser){
             if($ser['name'] == 'ws'){
-                return $ser['im_server_protocol'].'://'.$ser['im_server_ip'].':'.$ser['port'];
+//                return $ser['im_server_protocol'].'://'.$ser['im_server_ip'].':'.$ser['port'];
+                return [
+                    'ip' => $ser['im_server_ip'],
+                    'port' => $ser['port']
+                ];
             }
         }
     }

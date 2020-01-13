@@ -105,8 +105,6 @@ class ImController extends HyperServer implements OnMessageInterface, OnOpenInte
 
     public function onOpen(WebSocketServer $server, Request $request): void
     {
-
-        //建立连接,
         $this->logger->debug(sprintf('WebSocket: 建立连接.', $request->fd));
         $this->imServer->open( $server,  $request);
     }

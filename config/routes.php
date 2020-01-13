@@ -19,6 +19,7 @@ Router::addServer('http', function () {
     Router::get('/user/register', 'App\Http\Im\UserController@register');
     Router::get('/user/login', 'App\Http\Im\UserController@login');
     Router::get('/user/logout', 'App\Http\Im\UserController@logout');
+    Router::get('/cal', 'App\Controller\IndexController@test');
 });
 
 Router::addServer('ws', function () {

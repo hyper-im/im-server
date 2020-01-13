@@ -31,7 +31,12 @@
         "hyperf/websocket-server": "^1.1",
         "hyperf/websocket-client": "^1.1",
         "hyperf/consul": "^1.1",
-        "rmccue/requests": "^1.7"
+        "rmccue/requests": "^1.7",
+        "hyperf/service-governance": "^1.1",
+        "hyperf/rpc-server": "^1.1",
+        "hyperf/rpc-client": "^1.1",
+        "hyperf/rpc": "^1.1",
+        "hyperf/json-rpc": "^1.1"
     },
     "require-dev": {
         "swoft/swoole-ide-helper": "^4.2",
