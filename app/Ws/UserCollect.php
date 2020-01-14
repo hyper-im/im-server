@@ -26,21 +26,22 @@ class UserCollect
     public static $userInfo;
     public static $userInfoFd;
 
-    public function joinIm($fd, $user){
+    public function joinIm($fd, $data){
 
-        $room_id = $user['room_id']??0;
-        $uid = $user['uid']??0;
-        if($room_id){
-            $roomKey = RedisKeys::ROOM_ONLINE.$room_id;
-            if(!$this->redis->hExists($roomKey, $uid)){
-                $this->redis->hSet($roomKey, $uid, $fd);
+        $channel = $data['channel']??0;
+        $uid = $data['uid']??0;
+
+        if($channel){
+            $channelKey = RedisKeys::ROOM_ONLINE.$channel;
+            if(!$this->redis->hExists($channelKey, $fd)){
+                $this->redis->hSet($channelKey, $fd, $uid);
             }
         }
 
         if($uid){
             $user_on_room_key = RedisKeys::USER_ON_ROOM;
             if(!$this->redis->hExists($user_on_room_key, $uid)){
-                $this->redis->hSet($user_on_room_key, $uid, $room_id);
+                $this->redis->hSet($user_on_room_key, $uid, $channel);
             }
         }
 
@@ -94,6 +95,15 @@ class UserCollect
 
     public static function list(){
         return self::$userInfo;
+    }
+
+    public function getFdByChannel($channel){
+        $result = [];
+        if($channel){
+            $channelKey = RedisKeys::ROOM_ONLINE.$channel;
+            $result =  $this->redis->hGetAll($channelKey);
+        }
+        return $result;
     }
 
     public static function getUserByFd($fd){

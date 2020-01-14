@@ -30,6 +30,7 @@ class AsClient
     public $client = null;
     protected $logger = null;
     protected $container = null;
+    protected $server_info = null;
 
     public function __construct(StdoutLoggerInterface $stdoutLogger, ContainerInterface $container)
     {
@@ -62,42 +63,44 @@ class AsClient
             throw new ServiceException('Please check config setting! file path: config/autoload/server.php');
         }
 
-        $cli = new Client($im_router_ip, $im_router_port);
-        $ret = $cli->upgrade("/im-router");
-        if ($ret) {
-            $data=[
-                'serviceName'=>'IM-SERVER',
-                'ip'=>$im_server['ip'],
-                'port'=>$im_server['port']
-            ];
+        go(function() use ($im_router_ip, $im_router_port, $im_server){
+            $cli = new Client($im_router_ip, $im_router_port);
+            $ret = $cli->upgrade("/im-router");
+            if ($ret) {
+                $data=[
+                    'serviceName'=>'IM-SERVER',
+                    'ip'=>$im_server['ip'],
+                    'port'=>$im_server['port']
+                ];
 
-            $cli->push(im_encode(
-                ClientCode::REGISTER_FROM_SERVER,
-                $data,
-                ClientCode::FROM_SERVER_CLIENT
+                $cli->push(im_encode(
+                    ClientCode::REGISTER_FROM_SERVER,
+                    $data,
+                    ClientCode::FROM_SERVER_CLIENT
                 ));
 
-            $rec = $cli->recv();
-            try{
-                $data = json_decode($rec, true);
-                if($data['code'] == 200){
-                    $this->client = $cli;
-                    $this->logger->debug(sprintf('Connect Router Server Success.'));
-                }else{
-                    $this->logger->debug(sprintf('Connect Router Server Fail.'));
+                $rec = $cli->recv();
+                try{
+                    $data = json_decode($rec, true);
+                    if($data['code'] == 200){
+                        $this->client = $cli;
+                        $this->logger->debug(sprintf('Connect Router Server Success.'));
+                    }else{
+                        $this->logger->debug(sprintf('Connect Router Server Fail.'));
+                        throw new ServiceException('Can not connect Router Server!');
+                    }
+                }catch (\Exception $exception){
                     throw new ServiceException('Can not connect Router Server!');
                 }
-            }catch (\Exception $exception){
-                throw new ServiceException('Can not connect Router Server!');
-            }
 
-            //心跳处理
-            swoole_timer_tick(3000,function ()use($cli){
-                if($cli->errCode==0){
-                    $cli->push('',WEBSOCKET_OPCODE_PING); //
-                }
-            });
-        }
+                //心跳处理
+                swoole_timer_tick(3000,function ()use($cli){
+                    if($cli->errCode==0){
+                        $cli->push('',WEBSOCKET_OPCODE_PING); //
+                    }
+                });
+            }
+        });
     }
 
     /**
@@ -112,6 +115,7 @@ class AsClient
         $fd = $request->fd;
         $data['fd'] = $fd;
         $data['uid'] = UserCollect::getUidByFd($fd);
+        $data['ip_port'] = $this->server_info;
         $push_data = im_encode($action, $data, $from);
         $this->client->push($push_data);
     }
@@ -124,6 +128,7 @@ class AsClient
 
         foreach ($server['servers'] as $ser){
             if($ser['name'] == 'ws'){
+                $this->server_info = $ser['im_server_ip'].":".$ser['port'];
                 return [
                     'ip' => $ser['im_server_ip'],
                     'port' => $ser['port']

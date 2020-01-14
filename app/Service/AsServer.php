@@ -44,7 +44,7 @@ class AsServer
         $this->userCollect->joinIm($fd,$user);
 
         //用户,注册到route
-        $this->client->broadCast(ClientCode::REGISTER_FROM_USER,$user,ClientCode::REGISTER_FROM_SERVER);
+//        $this->client->broadCast(ClientCode::REGISTER_FROM_USER,$user,ClientCode::REGISTER_FROM_SERVER);
 
         $broadCast_data = [
             'data' => "欢迎新朋友:{$user['username']}!",
@@ -90,8 +90,10 @@ class AsServer
                     $server->push($fd, $msg);
                 }
                 break;
+            case ServerCode::SERVER_CLIENT_BROADCAST;
+
+                break;
             default:
-                echo 11;
                 break;
         }
 

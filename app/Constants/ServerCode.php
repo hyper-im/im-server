@@ -40,6 +40,11 @@ class ServerCode extends AbstractConstants
     const CHAT_BROADCAST = 'chat_broadcast';
 
     /**
+     * @Message("来源server-client-broadCast广播信息")
+     */
+    const SERVER_CLIENT_BROADCAST = 'server_client_broadcast';
+
+    /**
      * @Message("登录")
      */
     const LOGIN = 'login';
