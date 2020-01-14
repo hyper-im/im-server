@@ -20,7 +20,7 @@ return [
             'name' => 'http',
             'type' => Server::SERVER_HTTP,
             'host' => '0.0.0.0',
-            'port' => 9501,
+            'port' => 9511,
             'sock_type' => SWOOLE_SOCK_TCP,
             'callbacks' => [
                 SwooleEvent::ON_REQUEST => [Hyperf\HttpServer\Server::class, 'onRequest'],
@@ -30,27 +30,27 @@ return [
             'name' => 'ws',
             'type' => Server::SERVER_WEBSOCKET,
             'host' => '0.0.0.0',
-            'port' => 9502,
+            'port' => 9512,
             'im_server_protocol' => env('IM_SERVER_PROTOCOL','http'),
             'im_server_ip' => env('IM_SERVER_IP','127.0.0.1'),
             'sock_type' => SWOOLE_SOCK_TCP,
             'callbacks' => [
-                SwooleEvent::ON_HAND_SHAKE => [\App\Ws\ImController::class, 'onHandShake'],
+                SwooleEvent::ON_HAND_SHAKE => [\App\Ws\ServerController::class, 'onHandShake'],
 //                SwooleEvent::ON_HAND_SHAKE => [Hyperf\WebSocketServer\Server::class, 'onHandShake'],
                 SwooleEvent::ON_MESSAGE => [Hyperf\WebSocketServer\Server::class, 'onMessage'],
                 SwooleEvent::ON_CLOSE => [Hyperf\WebSocketServer\Server::class, 'onClose'],
             ],
         ],
-        [
-            'name' => 'jsonrpc-http',
-            'type' => Server::SERVER_HTTP,
-            'host' => '0.0.0.0',
-            'port' => 9504,
-            'sock_type' => SWOOLE_SOCK_TCP,
-            'callbacks' => [
-                SwooleEvent::ON_REQUEST => [\Hyperf\JsonRpc\HttpServer::class, 'onRequest'],
-            ],
-        ],
+//        [
+//            'name' => 'jsonrpc-http',
+//            'type' => Server::SERVER_HTTP,
+//            'host' => '0.0.0.0',
+//            'port' => 9514,
+//            'sock_type' => SWOOLE_SOCK_TCP,
+//            'callbacks' => [
+//                SwooleEvent::ON_REQUEST => [\Hyperf\JsonRpc\HttpServer::class, 'onRequest'],
+//            ],
+//        ],
     ],
     'settings' => [
         'enable_coroutine' => true,

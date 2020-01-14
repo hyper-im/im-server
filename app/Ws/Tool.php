@@ -18,6 +18,7 @@ use Swoole\WebSocket\Server as WebSocketServer;
 
 class Tool
 {
+
     //解析data得到数据
     public static function decode(Request $request){
 

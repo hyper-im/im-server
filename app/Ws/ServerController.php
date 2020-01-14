@@ -3,16 +3,15 @@
  * +----------------------------------------------------------------------
  * |
  * +----------------------------------------------------------------------
- * | Copyright (c) 2018 https://github.com/hyper-im All rights reserved.
+ * | Copyright (c) 2020 https://github.com/hyper-im All rights reserved.
  * +----------------------------------------------------------------------
- * | Date：20-1-10 上午12:28
+ * | Date：20-1-13 下午7:13
  * | Author: Bada (346025425@qq.com) QQ：346025425
  * +----------------------------------------------------------------------
  */
 
-declare(strict_types=1);
-
 namespace App\Ws;
+
 
 use Hyperf\Contract\OnCloseInterface;
 use Hyperf\Contract\OnMessageInterface;
@@ -24,22 +23,16 @@ use Hyperf\HttpServer\Router\Dispatched;
 use Hyperf\WebSocketServer\Collector\FdCollector;
 use Hyperf\WebSocketServer\Exception\WebSocketHandeShakeException;
 use Hyperf\WebSocketServer\Security;
+use Hyperf\WebSocketServer\Server as HyperServer;
+use Requests;
 use Swoole\Http\Request;
 use Swoole\Http\Response as SwooleResponse;
 use Swoole\Server;
-use Swoole\Websocket\Frame;
+use Swoole\WebSocket\Frame;
 use Swoole\WebSocket\Server as WebSocketServer;
-use Hyperf\WebSocketServer\Server as HyperServer;
 
-/**
- * Notes: IM-server端
- * Class WebSocketController
- * @package App\Controller
- * Im
- */
-class ImController extends HyperServer implements OnMessageInterface, OnOpenInterface, OnCloseInterface
+class ServerController extends HyperServer implements OnMessageInterface, OnOpenInterface, OnCloseInterface
 {
-
     /**
      * @Inject()
      * @var ImServerController
@@ -48,6 +41,7 @@ class ImController extends HyperServer implements OnMessageInterface, OnOpenInte
 
     public function onHandShake(Request $request, SwooleResponse $response): void
     {
+
         try {
             $security = $this->container->get(Security::class);
 
@@ -63,7 +57,9 @@ class ImController extends HyperServer implements OnMessageInterface, OnOpenInte
 
             //加入自己的逻辑
             $protocol = $psr7Request->getHeaderLine(Security::SEC_WEBSOCKET_PROTOCOL);
-            if ($protocol != 'token_bada') {
+            $url = "http://127.0.0.1:9501/im-server/user/verify_token?token=".$protocol;
+            $data = json_decode(Requests::get($url), true);
+            if ($data['code'] != 200) {
                 throw new WebSocketHandeShakeException('sec-websocket-protocol is invalid!');
             }
 
@@ -105,7 +101,6 @@ class ImController extends HyperServer implements OnMessageInterface, OnOpenInte
 
     public function onOpen(WebSocketServer $server, Request $request): void
     {
-        $this->logger->debug(sprintf('WebSocket: 建立连接.', $request->fd));
         $this->imServer->open( $server,  $request);
     }
 

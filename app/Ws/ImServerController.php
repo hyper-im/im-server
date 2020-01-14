@@ -13,7 +13,8 @@
 namespace App\Ws;
 
 
-use Nette\Utils\Image;
+use App\Constants\ServerCode;
+use Hyperf\WebSocketServer\Collector\FdCollector;
 use Swoole\Http\Request;
 use Swoole\Server;
 use Swoole\WebSocket\Frame;
@@ -21,6 +22,8 @@ use Swoole\WebSocket\Server as WebSocketServer;
 
 class ImServerController
 {
+
+    protected $client = null;
 
     public function open(WebSocketServer $server, Request $request){
         $msg['data'] = "欢迎fd={$request->fd}的大神, 上线啦!";
@@ -33,22 +36,21 @@ class ImServerController
     }
 
     public function message(WebSocketServer $server, Frame $frame){
-        var_dump($frame->data);
         $imRequest = json_decode($frame->data, true);
         $action = $imRequest['action'];
         switch ($action){
-            case ImActionType::CHAT_PRIVATE;
+            case ServerCode::CHAT_PRIVATE;
                 //检测fd是否存在
 //                Tool::check_fd($server, $imRequest['data']['userId']);
                 $pushData['data'] = '私人聊天信息';
                 $server->push($frame->fd, Tool::encode($pushData));
                 break;
-            case ImActionType::CHAT_CHANNEL;
+            case ServerCode::CHAT_CHANNEL;
                 //检测频道是否存在
                 break;
-            case ImActionType::CHAT_BROADCAST;
-                $msg= "FD={$frame->fd}的大神说: ".$imRequest['data'];
-                foreach ($server->connections as $fd){
+            case ServerCode::CHAT_BROADCAST;
+                $msg = "FD={$frame->fd}的大神说: ".$imRequest['data'];
+                foreach (FdCollector::list() as $fd){
                     if($fd == $frame->fd){
                         continue;
                     }

@@ -14,6 +14,8 @@ namespace App\Http\Im;
 
 
 use App\Controller\AbstractController;
+use App\Ws\ClientController;
+use App\Ws\ServerController;
 
 class UserController extends AbstractController
 {
@@ -39,6 +41,10 @@ class UserController extends AbstractController
      */
     public function logout()
     {
-        return 'logout';
+        /** @var ClientController $client */
+        $client = $this->container->get(ClientController::class);
+        $client->getInstance();
+
+        var_dump($client->client);
     }
 }

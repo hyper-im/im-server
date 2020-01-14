@@ -35,19 +35,20 @@ class ConsulRegisterListener implements ListenerInterface
     public function process(object $event)
     {
         echo "work-start后, 开始注册信息到consul".PHP_EOL;
-        $im_server = $this->getWsProvidePort();
-        if(!$im_server){
-            return true;
-        }
 
-        $headers = [];
-        $options = [];
-        $consul_uri = config('consul')['uri'];
-        try{
-            Requests::put($consul_uri."/v1/kv/im_server", $headers,json_encode($im_server), $options);
-        }catch (\Exception $e){
-            exit($e->getMessage());
-        }
+//        $im_server = $this->getWsProvidePort();
+//        if(!$im_server){
+//            return true;
+//        }
+//
+//        $headers = [];
+//        $options = [];
+//        $consul_uri = config('consul')['uri'];
+//        try{
+//            Requests::put($consul_uri."/v1/kv/im_server", $headers,json_encode($im_server), $options);
+//        }catch (\Exception $e){
+//            exit($e->getMessage());
+//        }
     }
 
     public function getWsProvidePort(){
