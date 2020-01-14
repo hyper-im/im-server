@@ -22,6 +22,9 @@ use Swoole\Coroutine\Http\Client;
 
 class ClientController
 {
+    /**
+     * @var Client
+     */
     public $client = null;
     protected $logger = null;
     protected $container = null;
@@ -30,13 +33,14 @@ class ClientController
     {
         $this->logger = $stdoutLogger;
         $this->container = $container;
+        $this->getInstance();
     }
 
     public function getInstance(){
         if($this->client == null){
             $this->initClient();
         }
-        return $this->client;
+        return $this;
     }
 
     public function initClient(){
@@ -82,5 +86,9 @@ class ClientController
                 }
             });
         }
+    }
+
+    public function broadCast($data){
+        $this->client->push($data);
     }
 }

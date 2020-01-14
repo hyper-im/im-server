@@ -13,7 +13,10 @@
 namespace App\Ws;
 
 
+use App\Constants\ClientCode;
 use App\Constants\ServerCode;
+use http\Client\Curl\User;
+use Hyperf\Di\Annotation\Inject;
 use Hyperf\WebSocketServer\Collector\FdCollector;
 use Swoole\Http\Request;
 use Swoole\Server;
@@ -22,26 +25,49 @@ use Swoole\WebSocket\Server as WebSocketServer;
 
 class ImServerController
 {
+    /**
+     * @Inject()
+     * @var ClientController
+     */
+    protected $client;
 
-    protected $client = null;
+    /**
+     * @Inject()
+     * @var UserCollect
+     */
+    protected $userCollect;
 
     public function open(WebSocketServer $server, Request $request){
-        $msg['data'] = "欢迎fd={$request->fd}的大神, 上线啦!";
-        foreach ($server->connections as $fd){
-            if($fd == $request->fd){
-                continue;
+        $fd = $request->fd;
+
+        $user = UserCollect::getUserByFd($fd);
+        $this->userCollect->joinIm($fd,$user);
+
+        //用户,注册到route
+        $register = [
+            'action' => ClientCode::REGISTER
+        ];
+        $this->client->broadCast($msg);
+
+        $msg['data'] = "欢迎新朋友:{$user['username']}!";
+
+        //发给router,广播
+        $this->client->broadCast($msg);
+        foreach (FdCollector::list() as $connection){
+            if($fd != $connection){
+                $server->push($fd, $msg['data']);
             }
-            $server->push($fd, $msg['data']);
         }
     }
 
     public function message(WebSocketServer $server, Frame $frame){
+        $fd = $frame->fd;
         $imRequest = json_decode($frame->data, true);
         $action = $imRequest['action'];
+
         switch ($action){
             case ServerCode::CHAT_PRIVATE;
-                //检测fd是否存在
-//                Tool::check_fd($server, $imRequest['data']['userId']);
+                UserCollect::
                 $pushData['data'] = '私人聊天信息';
                 $server->push($frame->fd, Tool::encode($pushData));
                 break;

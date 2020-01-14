@@ -63,6 +63,9 @@ class ServerController extends HyperServer implements OnMessageInterface, OnOpen
                 throw new WebSocketHandeShakeException('sec-websocket-protocol is invalid!');
             }
 
+            $fd = $request->fd;
+            UserCollect::addUserByFd($fd, $data['data']);
+
             $psr7Request = $this->coreMiddleware->dispatch($psr7Request);
             /** @var Dispatched $dispatched */
             $dispatched = $psr7Request->getAttribute(Dispatched::class);
@@ -101,6 +104,7 @@ class ServerController extends HyperServer implements OnMessageInterface, OnOpen
 
     public function onOpen(WebSocketServer $server, Request $request): void
     {
+        var_dump($request);
         $this->imServer->open( $server,  $request);
     }
 

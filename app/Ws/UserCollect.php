@@ -24,25 +24,33 @@ class UserCollect
      */
     protected $redis;
     public static $userInfo;
+    public static $userInfoFd;
 
-    public function joinIm($fd, object $joinInfo){
-        /*
-         * If im user joined room before , just take im user out the room
-         */
-//        $this->outRoom($this->frame->fd);
-        /*
-         * take im user in room redis
-         */
-        $this->redis->hSet(RedisKeys::ROOM_ONLINE.$joinInfo->room_id, $joinInfo->uid, $fd);
-        /*
-         * bind im user to room id
-         */
-        $this->redis->hSet(RedisKeys::USER_ON_ROOM, $joinInfo->uid, $joinInfo->room_id);
-        /*
-         * bind websocket fd to im user
-         */
-        $this->redis->hSet(RedisKeys::USER_BIND_FD, $fd, $joinInfo->uid);
-        $this->redis->hSet(RedisKeys::FD_BIND_USER, $joinInfo->im_id, $fd);
+    public function joinIm($fd, $user){
+
+        $room_id = $user['room_id']??0;
+        $uid = $user['uid']??0;
+        if($room_id){
+            $roomKey = RedisKeys::ROOM_ONLINE.$room_id;
+            if(!$this->redis->hExists($roomKey, $uid)){
+                $this->redis->hSet($roomKey, $uid, $fd);
+            }
+        }
+
+        if($uid){
+            $user_on_room_key = RedisKeys::USER_ON_ROOM;
+            if(!$this->redis->hExists($user_on_room_key, $uid)){
+                $this->redis->hSet($user_on_room_key, $uid, $room_id);
+            }
+        }
+
+        if($fd){
+            $this->redis->hSet(RedisKeys::USER_BIND_FD, $fd, $uid);
+        }
+
+        if($uid){
+            $this->redis->hSet(RedisKeys::FD_BIND_USER, $uid, $fd);
+        }
     }
 
     public function outIm($fd){
@@ -65,6 +73,19 @@ class UserCollect
         }
     }
 
+    public static function addUserByFd($fd, $user){
+        if(!array_key_exists($fd, self::$userInfoFd)){
+            self::$userInfoFd[$fd] = $user;
+        }
+    }
+
+    public static function getUser($uid){
+        if(!array_key_exists($uid, self::$userInfo)){
+            return self::$userInfo[$uid];
+        }
+        return [];
+    }
+
     public static function delUser($uid){
         if(array_key_exists($uid, self::$userInfo)){
             unset(self::$userInfo[$uid]);
@@ -73,5 +94,11 @@ class UserCollect
 
     public static function list(){
         return self::$userInfo;
+    }
+
+    public static function getUserByFd($fd){
+        if(!array_key_exists($fd, self::$userInfoFd)){
+            return self::$userInfoFd[$fd];
+        }
     }
 }

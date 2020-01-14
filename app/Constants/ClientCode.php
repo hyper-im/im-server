@@ -25,8 +25,13 @@ use Hyperf\Constants\Annotation\Constants;
 class ClientCode extends AbstractConstants
 {
     /**
-     * @Message("注册到路由")
+     * @Message("服务端client注册到router")
      */
-    const REGISTER = 'register';
+    const REGISTER_FROM_SERVER = 'register_from_server';
+
+    /**
+     * @Message("用户注册")
+     */
+    const REGISTER_FROM_USER = 'register_from_user';
 
 }
