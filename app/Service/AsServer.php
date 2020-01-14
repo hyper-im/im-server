@@ -68,38 +68,54 @@ class AsServer
         //将要push的信息
         $pushData['data'] = $params['data'];
 
-        $fd_in_server = false;
+        $is_broadcast = true;
         switch ($action){
             case ServerCode::CHAT_PRIVATE;
                 //判断是否在当前服务器内
                 $uid = UserCollect::getUidByFd($fd);
                 if($uid){
-                    $fd_in_server = true;
+                    $is_broadcast = false;
                     $server->push($fd, json_encode($pushData));
                 }
                 break;
             case ServerCode::CHAT_CHANNEL;
                 //检测频道是否存在
+                $channel = $params['channel'];
+                $fd_in_channel = $this->userCollect->getFdByChannel($channel);
+                foreach ($fd_in_channel as $chan_fd){
+//                    $server->isEstablished($fd);
+                    if($chan_fd != $fd){
+                        $server->push($chan_fd, json_encode($pushData));
+                    }
+                }
                 break;
             case ServerCode::CHAT_BROADCAST;
-                $msg = "FD={$frame->fd}的大神说: ".$im_data['data'];
                 foreach (FdCollector::list() as $fd){
-                    if($fd == $frame->fd){
+                    if($fd == $fd){
                         continue;
                     }
-                    $server->push($fd, $msg);
+                    $server->push($fd, $pushData);
                 }
                 break;
             case ServerCode::SERVER_CLIENT_BROADCAST;
+                //不需要广播
+                $is_broadcast = false;
+
+                //uid和channel
+                $uid = $params['uid'];
+                if($uid){
+                    $fd = $this->userCollect->getFdByUid($uid);
+                }
+                $channel = $params['channel'];
 
                 break;
             default:
                 break;
         }
 
-        if(!$fd_in_server){
+        if($is_broadcast){
             //进行广播信息
-            $this->client->broadCast(ClientCode::SERVER_CLIENT_BROADCAST,'');
+            $this->client->broadCast(ClientCode::SERVER_CLIENT_BROADCAST,$params);
         }
     }
 

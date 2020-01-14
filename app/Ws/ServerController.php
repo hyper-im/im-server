@@ -58,7 +58,7 @@ class ServerController extends HyperServer implements OnMessageInterface, OnOpen
 
             //加入自己的逻辑
             $protocol = $psr7Request->getHeaderLine(Security::SEC_WEBSOCKET_PROTOCOL);
-            $url = "http://127.0.0.1:9501/im-server/user/verify_token?token=".$protocol;
+            $url = "http://106.54.246.172:9501/im-server/user/verify_token?token=".$protocol;
             $data = json_decode(Requests::get($url), true);
             if ($data['code'] != 200) {
                 throw new WebSocketHandeShakeException('sec-websocket-protocol is invalid!');

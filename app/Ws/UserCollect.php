@@ -106,6 +106,14 @@ class UserCollect
         return $result;
     }
 
+    public function getFdByUid($uid){
+        $fd = false;
+        if($uid){
+            return $this->redis->hGet(RedisKeys::FD_BIND_USER, $uid);
+        }
+        return $fd;
+    }
+
     public static function getUserByFd($fd){
         if(!array_key_exists($fd, self::$userInfoFd)){
             return self::$userInfoFd[$fd];
