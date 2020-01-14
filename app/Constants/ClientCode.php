@@ -34,4 +34,14 @@ class ClientCode extends AbstractConstants
      */
     const REGISTER_FROM_USER = 'register_from_user';
 
+    /**
+     * @Message("来源server-client")
+     */
+    const FROM_SERVER_CLIENT = 'from_server_client';
+
+    /**
+     * @Message("来源server-client-broadCast广播信息")
+     */
+    const SERVER_CLIENT_BROADCAST = 'server_client_broadcast';
+
 }

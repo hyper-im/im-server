@@ -10,12 +10,12 @@
  * +----------------------------------------------------------------------
  */
 
-namespace App\Ws;
+namespace App\Service;
 
 
 use App\Constants\ClientCode;
 use App\Constants\ServerCode;
-use http\Client\Curl\User;
+use App\Ws\UserCollect;
 use Hyperf\Di\Annotation\Inject;
 use Hyperf\WebSocketServer\Collector\FdCollector;
 use Swoole\Http\Request;
@@ -23,11 +23,11 @@ use Swoole\Server;
 use Swoole\WebSocket\Frame;
 use Swoole\WebSocket\Server as WebSocketServer;
 
-class ImServerController
+class AsServer
 {
     /**
      * @Inject()
-     * @var ClientController
+     * @var AsClient
      */
     protected $client;
 
@@ -44,38 +44,45 @@ class ImServerController
         $this->userCollect->joinIm($fd,$user);
 
         //用户,注册到route
-        $register = [
-            'action' => ClientCode::REGISTER
-        ];
-        $this->client->broadCast($msg);
+        $this->client->broadCast(ClientCode::REGISTER_FROM_USER,$user,ClientCode::REGISTER_FROM_SERVER);
 
-        $msg['data'] = "欢迎新朋友:{$user['username']}!";
+        $broadCast_data = [
+            'data' => "欢迎新朋友:{$user['username']}!",
+        ];
 
         //发给router,广播
-        $this->client->broadCast($msg);
+        $this->client->broadCast(ClientCode::SERVER_CLIENT_BROADCAST,$broadCast_data);
         foreach (FdCollector::list() as $connection){
             if($fd != $connection){
-                $server->push($fd, $msg['data']);
+                $server->push($fd, json_encode($broadCast_data));
             }
         }
     }
 
     public function message(WebSocketServer $server, Frame $frame){
         $fd = $frame->fd;
-        $imRequest = json_decode($frame->data, true);
-        $action = $imRequest['action'];
+        $im_data = im_decode($frame->data);
+        $action = $im_data['action'];
+        $params = $im_data['params'];
 
+        //将要push的信息
+        $pushData['data'] = $params['data'];
+
+        $fd_in_server = false;
         switch ($action){
             case ServerCode::CHAT_PRIVATE;
-                UserCollect::
-                $pushData['data'] = '私人聊天信息';
-                $server->push($frame->fd, Tool::encode($pushData));
+                //判断是否在当前服务器内
+                $uid = UserCollect::getUidByFd($fd);
+                if($uid){
+                    $fd_in_server = true;
+                    $server->push($fd, json_encode($pushData));
+                }
                 break;
             case ServerCode::CHAT_CHANNEL;
                 //检测频道是否存在
                 break;
             case ServerCode::CHAT_BROADCAST;
-                $msg = "FD={$frame->fd}的大神说: ".$imRequest['data'];
+                $msg = "FD={$frame->fd}的大神说: ".$im_data['data'];
                 foreach (FdCollector::list() as $fd){
                     if($fd == $frame->fd){
                         continue;
@@ -86,6 +93,11 @@ class ImServerController
             default:
                 echo 11;
                 break;
+        }
+
+        if(!$fd_in_server){
+            //进行广播信息
+            $this->client->broadCast(ClientCode::SERVER_CLIENT_BROADCAST,'');
         }
     }
 
@@ -98,5 +110,4 @@ class ImServerController
             $server->push($client_fd, $msg);
         }
     }
-
 }

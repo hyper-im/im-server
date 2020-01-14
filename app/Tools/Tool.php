@@ -10,7 +10,7 @@
  * +----------------------------------------------------------------------
  */
 
-namespace App\Ws;
+namespace App\Tools;
 
 
 use Swoole\Http\Request;
@@ -33,7 +33,12 @@ class Tool
     }
 
     //对返回给客户端的信息进行encode
-    public static function encode($data){
+    public static function encode($action, $data, $from=''){
+        $data = [
+            'action' =>$action,
+            'params' => $data,
+            'from' => $from
+        ];
         return json_encode($data);
     }
 

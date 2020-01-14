@@ -10,17 +10,19 @@
  * +----------------------------------------------------------------------
  */
 
-namespace App\Ws;
+namespace App\Service;
 
 
 use App\Constants\ClientCode;
 use App\Exception\ServiceException;
+use App\Ws\UserCollect;
 use Hyperf\Contract\ConfigInterface;
 use Hyperf\Contract\StdoutLoggerInterface;
 use Psr\Container\ContainerInterface;
 use Swoole\Coroutine\Http\Client;
+use Swoole\Http\Request;
 
-class ClientController
+class AsClient
 {
     /**
      * @var Client
@@ -55,16 +57,26 @@ class ClientController
             throw new ServiceException('Please check config setting! file path: config/autoload/im_router.php');
         }
 
+        $im_server = $this->getWsProvidePort();
+        if(!$im_server){
+            throw new ServiceException('Please check config setting! file path: config/autoload/server.php');
+        }
+
         $cli = new Client($im_router_ip, $im_router_port);
         $ret = $cli->upgrade("/im-router");
         if ($ret) {
             $data=[
-                'action'=>ClientCode::REGISTER,
                 'serviceName'=>'IM-SERVER',
-                'ip'=>$im_router_ip,
-                'port'=>$im_router_port
+                'ip'=>$im_server['ip'],
+                'port'=>$im_server['port']
             ];
-            $cli->push(json_encode($data));
+
+            $cli->push(im_encode(
+                ClientCode::REGISTER_FROM_SERVER,
+                $data,
+                ClientCode::FROM_SERVER_CLIENT
+                ));
+
             $rec = $cli->recv();
             try{
                 $data = json_decode($rec, true);
@@ -88,7 +100,37 @@ class ClientController
         }
     }
 
-    public function broadCast($data){
-        $this->client->push($data);
+    /**
+     * server-client, 广播消息
+     * @param $action
+     * @param $data
+     * @param string $from
+     */
+    public function broadCast($action,$data,$from=ClientCode::SERVER_CLIENT_BROADCAST){
+
+        $request = $this->container->get(Request::class);
+        $fd = $request->fd;
+        $data['fd'] = $fd;
+        $data['uid'] = UserCollect::getUidByFd($fd);
+        $push_data = im_encode($action, $data, $from);
+        $this->client->push($push_data);
+    }
+
+    public function getWsProvidePort(){
+        $server = config('server');
+        if(!is_array($server)){
+            return false;
+        }
+
+        foreach ($server['servers'] as $ser){
+            if($ser['name'] == 'ws'){
+                return [
+                    'ip' => $ser['im_server_ip'],
+                    'port' => $ser['port']
+                ];
+            }
+        }
+
+        return false;
     }
 }

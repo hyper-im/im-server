@@ -13,6 +13,7 @@
 namespace App\Ws;
 
 
+use App\Service\AsServer;
 use Hyperf\Contract\OnCloseInterface;
 use Hyperf\Contract\OnMessageInterface;
 use Hyperf\Contract\OnOpenInterface;
@@ -35,7 +36,7 @@ class ServerController extends HyperServer implements OnMessageInterface, OnOpen
 {
     /**
      * @Inject()
-     * @var ImServerController
+     * @var AsServer
      */
     protected $imServer;
 

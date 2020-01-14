@@ -101,4 +101,10 @@ class UserCollect
             return self::$userInfoFd[$fd];
         }
     }
+
+    public static function getUidByFd($fd){
+        if(!array_key_exists($fd, self::$userInfoFd)){
+            return self::$userInfoFd[$fd]['uid'];
+        }
+    }
 }
