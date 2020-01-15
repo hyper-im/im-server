@@ -76,9 +76,11 @@ class AsServer
 
         //发给router,广播
         $this->client->broadCast(ClientCode::SERVER_CLIENT_BROADCAST,$broadCast_data);
-        foreach (FdCollector::list() as $connection){
-            if($fd != $connection->fd){
-                $server->push($connection->fd, json_encode($broadCast_data));
+
+        $routeFdList = UserCollect::routerFdList();
+        foreach ($server->connections as $client_fd){
+            if($fd != $client_fd && !in_array($client_fd, $routeFdList)){
+                $server->push($client_fd, json_encode($broadCast_data));
             }
         }
     }
@@ -123,7 +125,6 @@ class AsServer
                 $this->logger->info('接收到服务端内的广播信息, ');
                 $this->logger->info(json_encode($pushData));
                 $this->logger->info("当前fd:".$fd);
-                $this->logger->info(print_r(FdCollector::list(), true));
                 foreach ($server->connections as $client_fd){
                     if($fd != $client_fd){
                         $server->push($client_fd, json_encode($pushData));
