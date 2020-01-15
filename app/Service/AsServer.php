@@ -100,18 +100,18 @@ class AsServer
         //将要push的信息
         $pushData['data'] = $params['data'];
 
-        $is_broadcast = true;
+        $is_broadcast = false;
         switch ($action){
             case ServerCode::CHAT_PRIVATE;
                 //判断是否在当前服务器内
                 $uid = UserCollect::getUidByFd($fd);
                 if($uid){
-                    $is_broadcast = false;
                     $server->push($fd, json_encode($pushData));
                 }
                 break;
             case ServerCode::CHAT_CHANNEL;
                 //检测频道是否存在
+                $is_broadcast = true;
                 $channel = $params['channel'];
                 $fd_in_channel = $this->userCollect->getFdByChannel($channel);
                 foreach ($fd_in_channel as $chan_fd){
@@ -122,6 +122,7 @@ class AsServer
                 }
                 break;
             case ServerCode::CHAT_BROADCAST;
+                $is_broadcast = true;
                 $this->logger->info('接收到服务端内的广播信息, ');
                 $this->logger->info(json_encode($pushData));
                 $this->logger->info("当前fd:".$fd);
@@ -133,8 +134,6 @@ class AsServer
                 break;
             case ServerCode::SERVER_CLIENT_BROADCAST;
                 //不需要广播
-                $is_broadcast = false;
-
                 $this->logger->info('接收到route广播信息, ');
                 $this->logger->info(print_r($params, true));
 
