@@ -81,7 +81,7 @@ if (!function_exists('im_encode')) {
 
 if (!function_exists('im_decode')) {
     function im_decode($data){
-        return json_decode($data);
+        return json_decode($data,true);
     }
 }
 

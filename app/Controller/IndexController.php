@@ -13,10 +13,18 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\JsonRpc\CalculatorService;
+use App\Service\AsClient;
 use Hyperf\Di\Annotation\Inject;
+use Hyperf\HttpServer\Annotation\AutoController;
 use Hyperf\HttpServer\Router\Router;
 use HyperfTest\Di\Stub\AnnotationCollector;
 
+/**
+ * Notes: 文件类注释说明
+ * Class IndexController
+ * @package App\Controller
+ * @AutoController()
+ */
 class IndexController extends AbstractController
 {
     /**
@@ -37,9 +45,10 @@ class IndexController extends AbstractController
     }
 
     public function test(){
-        $a = intval($this->request->input('a'));
-        $b = intval($this->request->input('b'));
-        return $this->calculator->calculate($a, $b);
+        $asClient = $this->container->get(AsClient::class);
+        $asClient->client->push('{"action":"server_client_broadcast","params":{"data":"\u6b22\u8fce\u65b0\u670b\u53cb:xiaosan!","fd":0,"uid":[],"ip_port":"127.0.0.1:9512"},"from":"server_client_broadcast"}');
+        $data = $asClient->client->recv();
+        var_dump($data);
     }
 
 }

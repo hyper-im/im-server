@@ -18,6 +18,8 @@ use App\Exception\ServiceException;
 use App\Ws\UserCollect;
 use Hyperf\Contract\ConfigInterface;
 use Hyperf\Contract\StdoutLoggerInterface;
+use Hyperf\Di\Annotation\Inject;
+use Hyperf\WebSocketClient\ClientFactory;
 use Psr\Container\ContainerInterface;
 use Swoole\Coroutine\Http\Client;
 use Swoole\Http\Request;
@@ -32,18 +34,23 @@ class AsClient
     protected $container = null;
     protected $server_info = null;
 
+    /**
+     * @Inject
+     * @var ClientFactory
+     */
+    protected $clientFactory;
+
     public function __construct(StdoutLoggerInterface $stdoutLogger, ContainerInterface $container)
     {
         $this->logger = $stdoutLogger;
         $this->container = $container;
-        $this->getInstance();
+//        $this->getInstance();
     }
 
     public function getInstance(){
         if($this->client == null){
             $this->initClient();
         }
-        return $this;
     }
 
     public function initClient(){
@@ -63,44 +70,76 @@ class AsClient
             throw new ServiceException('Please check config setting! file path: config/autoload/server.php');
         }
 
-        go(function() use ($im_router_ip, $im_router_port, $im_server){
-            $cli = new Client($im_router_ip, $im_router_port);
-            $ret = $cli->upgrade("/im-router");
-            if ($ret) {
-                $data=[
-                    'serviceName'=>'IM-SERVER',
-                    'ip'=>$im_server['ip'],
-                    'port'=>$im_server['port']
-                ];
+        // 通过 ClientFactory 创建 Client 对象，创建出来的对象为短生命周期对象
+        $uri = $im_router_ip.":".$im_router_port.'/im-router';
+        $this->client = $this->clientFactory->create($uri,false);
+        // 向 WebSocket 服务端发送消息
+        $data=[
+            'serviceName'=>'IM-SERVER',
+            'ip'=>$im_server['ip'],
+            'port'=>$im_server['port']
+        ];
 
-                $cli->push(im_encode(
-                    ClientCode::REGISTER_FROM_SERVER,
-                    $data,
-                    ClientCode::FROM_SERVER_CLIENT
-                ));
-
-                $rec = $cli->recv();
-                try{
-                    $data = json_decode($rec, true);
-                    if($data['code'] == 200){
-                        $this->client = $cli;
-                        $this->logger->debug(sprintf('Connect Router Server Success.'));
-                    }else{
-                        $this->logger->debug(sprintf('Connect Router Server Fail.'));
-                        throw new ServiceException('Can not connect Router Server!');
-                    }
-                }catch (\Exception $exception){
-                    throw new ServiceException('Can not connect Router Server!');
-                }
-
-                //心跳处理
-                swoole_timer_tick(3000,function ()use($cli){
-                    if($cli->errCode==0){
-                        $cli->push('',WEBSOCKET_OPCODE_PING); //
-                    }
-                });
+        $this->client->push(im_encode(
+            ClientCode::REGISTER_FROM_SERVER,
+            $data,
+            ClientCode::FROM_SERVER_CLIENT
+        ));
+        // 获取服务端响应的消息，服务端需要通过 push 向本客户端的 fd 投递消息，才能获取；以下设置超时时间 2s，接收到的数据类型为 Frame 对象。
+        /** @var Frame $msg */
+        $rec = $this->client->recv(1);
+        try{
+            $data = json_decode($rec, true);
+            if($data['code'] == 200){
+                $this->logger->debug(sprintf('Connect Router Server Success.'));
+            }else{
+                $this->logger->debug(sprintf('Connect Router Server Fail.'));
+                throw new ServiceException('Can not connect Router Server!');
             }
-        });
+        }catch (\Exception $exception){
+            throw new ServiceException('Can not connect Router Server!');
+        }
+        // 获取文本数据：$res_msg->data
+
+//        $that = $this;
+//        go(function() use ($im_router_ip, $im_router_port, $im_server, $that){
+//            $that->client = new \Swoole\Coroutine\Http\Client($im_router_ip, $im_router_port);
+//            $ret = $that->client->upgrade("/im-router");
+//            if ($ret) {
+//                $data=[
+//                    'serviceName'=>'IM-SERVER',
+//                    'ip'=>$im_server['ip'],
+//                    'port'=>$im_server['port']
+//                ];
+//
+//                $that->client->push(im_encode(
+//                    ClientCode::REGISTER_FROM_SERVER,
+//                    $data,
+//                    ClientCode::FROM_SERVER_CLIENT
+//                ));
+//
+//                $rec = $that->client->recv();
+//                var_dump($rec);
+//                try{
+//                    $data = json_decode($rec, true);
+//                    if($data['code'] == 200){
+//                        $that->logger->debug(sprintf('Connect Router Server Success.'));
+//                    }else{
+//                        $that->logger->debug(sprintf('Connect Router Server Fail.'));
+//                        throw new ServiceException('Can not connect Router Server!');
+//                    }
+//                }catch (\Exception $exception){
+//                    throw new ServiceException('Can not connect Router Server!');
+//                }
+//
+////                $cli = $that->client;
+////                swoole_timer_tick(3000,function ()use($cli){
+////                    if($cli->errCode==0){
+////                        $cli->push('',WEBSOCKET_OPCODE_PING); //
+////                    }
+////                });
+//            }
+//        });
     }
 
     /**
@@ -117,6 +156,7 @@ class AsClient
         $data['uid'] = UserCollect::getUidByFd($fd);
         $data['ip_port'] = $this->server_info;
         $push_data = im_encode($action, $data, $from);
+        var_dump($push_data);
         $this->client->push($push_data);
     }
 

@@ -44,6 +44,9 @@ class ServerController extends HyperServer implements OnMessageInterface, OnOpen
     {
 
         try {
+//            print_r($request);
+            $get = $request->get;
+
             $security = $this->container->get(Security::class);
 
             $psr7Request = $this->initRequest($request);
@@ -58,14 +61,25 @@ class ServerController extends HyperServer implements OnMessageInterface, OnOpen
 
             //加入自己的逻辑
             $protocol = $psr7Request->getHeaderLine(Security::SEC_WEBSOCKET_PROTOCOL);
-            $url = "http://106.54.246.172:9501/im-server/user/verify_token?token=".$protocol;
-            $data = json_decode(Requests::get($url), true);
-            if ($data['code'] != 200) {
-                throw new WebSocketHandeShakeException('sec-websocket-protocol is invalid!');
-            }
+//            $url = "http://106.54.246.172:9501/im-server/user/verify_token?token=".$protocol;
+//            $data = json_decode(Requests::get($url), true);
+//            if ($data['code'] != 200) {
+//                throw new WebSocketHandeShakeException('sec-websocket-protocol is invalid!');
+//            }
 
-            $fd = $request->fd;
-            UserCollect::addUserByFd($fd, $data['data']);
+            if(is_array($get) && array_key_exists('from', $get) && $get['from'] == 'im-router'){
+                //
+                var_dump("im-route注册进来了");
+            }else{
+                $data = [
+                    'uid' => 10,
+                    'username' => 'xiaosan'
+                ];
+                $fd = $request->fd;
+                $data['uid'] = $data['uid']+$fd;
+                $data['username'] = $data['username']."__".(string)$fd;
+                UserCollect::addUserByFd($fd, $data);
+            }
 
             $psr7Request = $this->coreMiddleware->dispatch($psr7Request);
             /** @var Dispatched $dispatched */
@@ -98,14 +112,12 @@ class ServerController extends HyperServer implements OnMessageInterface, OnOpen
             if (! $psr7Response || ! $psr7Response instanceof Psr7Response) {
                 return;
             }
-            $this->logger->debug(sprintf('WebSocket: token校验通过.', $request->fd));
             $psr7Response->send();
         }
     }
 
     public function onOpen(WebSocketServer $server, Request $request): void
     {
-        var_dump($request);
         $this->imServer->open( $server,  $request);
     }
 

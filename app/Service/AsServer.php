@@ -16,6 +16,7 @@ namespace App\Service;
 use App\Constants\ClientCode;
 use App\Constants\ServerCode;
 use App\Ws\UserCollect;
+use Hyperf\Contract\ContainerInterface;
 use Hyperf\Di\Annotation\Inject;
 use Hyperf\WebSocketServer\Collector\FdCollector;
 use Swoole\Http\Request;
@@ -37,9 +38,21 @@ class AsServer
      */
     protected $userCollect;
 
-    public function open(WebSocketServer $server, Request $request){
-        $fd = $request->fd;
+    protected $container;
 
+    public function __construct(ContainerInterface $container)
+    {
+        $this->container = $container;
+    }
+
+    public function open(WebSocketServer $server, Request $request){
+
+        if(is_null($this->client->client)){
+            echo "open---实例化客户端".PHP_EOL;
+            $this->client->getInstance();
+        }
+
+        $fd = $request->fd;
         $user = UserCollect::getUserByFd($fd);
         $this->userCollect->joinIm($fd,$user);
 
@@ -53,13 +66,19 @@ class AsServer
         //发给router,广播
         $this->client->broadCast(ClientCode::SERVER_CLIENT_BROADCAST,$broadCast_data);
         foreach (FdCollector::list() as $connection){
-            if($fd != $connection){
+            if($fd != $connection->fd){
                 $server->push($fd, json_encode($broadCast_data));
             }
         }
     }
 
     public function message(WebSocketServer $server, Frame $frame){
+
+        if(is_null($this->client->client)){
+            echo "message---实例化客户端".PHP_EOL;
+            $this->client->getInstance();
+        }
+
         $fd = $frame->fd;
         $im_data = im_decode($frame->data);
         $action = $im_data['action'];
@@ -90,8 +109,8 @@ class AsServer
                 }
                 break;
             case ServerCode::CHAT_BROADCAST;
-                foreach (FdCollector::list() as $fd){
-                    if($fd == $fd){
+                foreach (FdCollector::list() as $connection){
+                    if($fd == $connection->fd){
                         continue;
                     }
                     $server->push($fd, $pushData);

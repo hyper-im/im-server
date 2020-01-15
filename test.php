@@ -10,9 +10,52 @@
  * +----------------------------------------------------------------------
  */
 
-$run = new Coroutine\Run();
-$run->add(function () {
-    Co::sleep(1);
-    echo "Done.\n";
+use App\Constants\ClientCode;
+
+require "./vendor/autoload.php";
+
+class client{
+    public $client = null;
+}
+
+/** @var client $obj */
+$obj = new client();
+$cli = go(function () use (&$obj){
+
+    $cli = $obj->client = new \Swoole\Coroutine\Http\Client("39.107.235.47", 9512);
+    $obj->client->setHeaders(
+        ['Sec-WebSocket-Protocol' => 'route']
+    );
+    $ret = $obj->client->upgrade("/im?from=im-router");
+    var_dump($ret);
+//    if ($ret) {
+//        $data=[
+//            'serviceName'=>'IM-SERVER',
+//            'ip'=>'127.0.0.1',
+//            'port'=>9512
+//        ];
+//
+//        $obj->client->push(im_encode(
+//            ClientCode::REGISTER_FROM_SERVER,
+//            $data,
+//            ClientCode::FROM_SERVER_CLIENT
+//        ));
+//        $rec = $obj->client->recv();
+//        var_dump($rec);
+//    }
+//    return $cli;
 });
-$run->start();
+
+//$data=[
+//    'serviceName'=>'IM-SERVER',
+//    'ip'=>'127.0.0.1',
+//    'port'=>9512
+//];
+//
+//$obj->client->push(im_encode(
+//    ClientCode::REGISTER_FROM_SERVER,
+//    $data,
+//    ClientCode::FROM_SERVER_CLIENT
+//));
+//$rec = $obj->client->recv();
+//var_dump($rec);

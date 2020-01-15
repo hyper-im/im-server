@@ -23,13 +23,15 @@ class UserCollect
      * @var \Redis
      */
     protected $redis;
-    public static $userInfo;
-    public static $userInfoFd;
+    public static $userInfo = [];
+    public static $userInfoFd = [];
 
     public function joinIm($fd, $data){
 
+        $fd = (string)$fd;
         $channel = $data['channel']??0;
         $uid = $data['uid']??0;
+        $uid = (string)$uid;
 
         if($channel){
             $channelKey = RedisKeys::ROOM_ONLINE.$channel;
@@ -81,6 +83,7 @@ class UserCollect
     }
 
     public static function getUser($uid){
+        $uid = (string)$uid;
         if(!array_key_exists($uid, self::$userInfo)){
             return self::$userInfo[$uid];
         }
@@ -88,9 +91,14 @@ class UserCollect
     }
 
     public static function delUser($uid){
+        $uid = (string)$uid;
         if(array_key_exists($uid, self::$userInfo)){
             unset(self::$userInfo[$uid]);
         }
+    }
+
+    public static function listByFd(){
+        return self::$userInfoFd;
     }
 
     public static function list(){
@@ -115,14 +123,16 @@ class UserCollect
     }
 
     public static function getUserByFd($fd){
-        if(!array_key_exists($fd, self::$userInfoFd)){
+        if(array_key_exists($fd, self::$userInfoFd)){
             return self::$userInfoFd[$fd];
         }
+        return [];
     }
 
     public static function getUidByFd($fd){
-        if(!array_key_exists($fd, self::$userInfoFd)){
+        if(array_key_exists($fd, self::$userInfoFd)){
             return self::$userInfoFd[$fd]['uid'];
         }
+        return [];
     }
 }

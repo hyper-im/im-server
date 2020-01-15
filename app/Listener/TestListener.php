@@ -6,7 +6,6 @@ namespace App\Listener;
 
 use App\Constants\ClientCode;
 use App\Service\AsClient;
-use Hyperf\Contract\ConfigInterface;
 use Hyperf\Event\Annotation\Listener;
 use Hyperf\Framework\Event\MainWorkerStart;
 use Hyperf\WebSocketClient\ClientFactory;
@@ -17,7 +16,7 @@ use Requests;
 /**
  * @Listener
  */
-class ConsulRegisterListener implements ListenerInterface
+class TestListener implements ListenerInterface
 {
     /**
      * @var ContainerInterface
@@ -32,7 +31,7 @@ class ConsulRegisterListener implements ListenerInterface
     public function listen(): array
     {
         return [
-            MainWorkerStart::class
+
         ];
     }
 
@@ -40,15 +39,10 @@ class ConsulRegisterListener implements ListenerInterface
     {
 
         $obj = $this->container->get(ClientFactory::class);
-        /** @var ConfigInterface $config */
-        $config = $this->container->get(ConfigInterface::class);
-
-        $im_router_ip = $config->get('im_router.ip','');
-        $im_router_port = intval($config->get('im_router.port',0));
-        $client = $obj->create($im_router_ip.":".$im_router_port.'/im-router', true);
+        $client = $obj->create('127.0.0.1:9502/im-router', false);
         $data=[
             'serviceName'=>'IM-SERVER',
-            'ip'=>'39.107.235.47',
+            'ip'=>'127.0.0.1',
             'port'=>9512
         ];
 
