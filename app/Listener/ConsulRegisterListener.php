@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Listener;
 
 use App\Constants\ClientCode;
+use App\Exception\ServiceException;
 use App\Service\AsClient;
 use Hyperf\Contract\ConfigInterface;
+use Hyperf\Contract\StdoutLoggerInterface;
 use Hyperf\Event\Annotation\Listener;
 use Hyperf\Framework\Event\MainWorkerStart;
+use Hyperf\Redis\Redis;
 use Hyperf\WebSocketClient\ClientFactory;
 use Psr\Container\ContainerInterface;
 use Hyperf\Event\Contract\ListenerInterface;
@@ -24,9 +27,15 @@ class ConsulRegisterListener implements ListenerInterface
      */
     private $container;
 
+    /**
+     * @var StdoutLoggerInterface|mixed
+     */
+    protected $logger;
+
     public function __construct(ContainerInterface $container)
     {
         $this->container = $container;
+        $this->logger = $container->get(StdoutLoggerInterface::class);
     }
 
     public function listen(): array
@@ -38,18 +47,27 @@ class ConsulRegisterListener implements ListenerInterface
 
     public function process(object $event)
     {
-
         $obj = $this->container->get(ClientFactory::class);
         /** @var ConfigInterface $config */
         $config = $this->container->get(ConfigInterface::class);
 
         $im_router_ip = $config->get('im_router.ip','');
         $im_router_port = intval($config->get('im_router.port',0));
+        $this->logger->debug(sprintf('try connect im-router %s:%d',$im_router_ip,$im_router_port));
+        if(empty($im_router_ip) || empty($im_router_port)){
+            throw new ServiceException('Please check config setting! file path: config/autoload/im_router.php');
+        }
+
+        $im_server = $this->getWsProvidePort();
+        if(!$im_server){
+            throw new ServiceException('Please check config setting! file path: config/autoload/server.php');
+        }
+
         $client = $obj->create($im_router_ip.":".$im_router_port.'/im-router', true);
         $data=[
             'serviceName'=>'IM-SERVER',
-            'ip'=>'39.107.235.47',
-            'port'=>9512
+            'ip'=>$im_server['ip'],
+            'port'=>$im_server['port']
         ];
 
         $client->push(im_encode(
@@ -60,27 +78,11 @@ class ConsulRegisterListener implements ListenerInterface
 
         $data = $client->recv();
 
-        $this->container->get(AsClient::class)->client = $client;
         echo "work-start后, 开始注册信息到consul########".PHP_EOL;
-        print_r($client);
-        $acclient = $this->container->get(AsClient::class);
 
-        print_r($acclient->client);
-
-        echo "work-start后, 开始注册信息到consul##########".PHP_EOL;
-//        $im_server = $this->getWsProvidePort();
-//        if(!$im_server){
-//            return true;
-//        }
-//
-//        $headers = [];
-//        $options = [];
-//        $consul_uri = config('consul')['uri'];
-//        try{
-//            Requests::put($consul_uri."/v1/kv/im_server", $headers,json_encode($im_server), $options);
-//        }catch (\Exception $e){
-//            exit($e->getMessage());
-//        }
+        $redis = $this->container->get(Redis::class);
+        $cnt = $redis->del('user_bind_fd','fd_bind_user','user_on_room');
+        $this->logger->info("清除redis-key成功,{$cnt}个");
     }
 
     public function getWsProvidePort(){
