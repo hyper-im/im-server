@@ -11,6 +11,7 @@ use Hyperf\Contract\ConfigInterface;
 use Hyperf\Contract\StdoutLoggerInterface;
 use Hyperf\Event\Annotation\Listener;
 use Hyperf\Framework\Event\MainWorkerStart;
+use Hyperf\Framework\Event\OnManagerStart;
 use Hyperf\Redis\Redis;
 use Hyperf\WebSocketClient\ClientFactory;
 use Psr\Container\ContainerInterface;

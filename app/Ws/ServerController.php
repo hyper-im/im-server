@@ -123,6 +123,7 @@ class ServerController extends HyperServer implements OnMessageInterface, OnOpen
 
     public function onMessage(WebSocketServer $server, Frame $frame): void
     {
+        $this->logger->info($frame->data);
         $this->imServer->message( $server,  $frame);
     }
 

@@ -17,6 +17,7 @@ use App\Constants\ClientCode;
 use App\Constants\ServerCode;
 use App\Ws\UserCollect;
 use Hyperf\Contract\ContainerInterface;
+use Hyperf\Contract\StdoutLoggerInterface;
 use Hyperf\Di\Annotation\Inject;
 use Hyperf\WebSocketServer\Collector\FdCollector;
 use Swoole\Http\Request;
@@ -40,9 +41,15 @@ class AsServer
 
     protected $container;
 
-    public function __construct(ContainerInterface $container)
+    /**
+     * @var StdoutLoggerInterface
+     */
+    protected $logger;
+
+    public function __construct(ContainerInterface $container, StdoutLoggerInterface $logger)
     {
         $this->container = $container;
+        $this->logger = $logger;
     }
 
     public function open(WebSocketServer $server, Request $request){
@@ -54,6 +61,10 @@ class AsServer
 
         $fd = $request->fd;
         $user = UserCollect::getUserByFd($fd);
+        if(empty($user)){
+            $this->logger->info('server onOpen user is null');
+            return ;
+        }
         $this->userCollect->joinIm($fd,$user);
 
         //用户,注册到route
@@ -67,7 +78,7 @@ class AsServer
         $this->client->broadCast(ClientCode::SERVER_CLIENT_BROADCAST,$broadCast_data);
         foreach (FdCollector::list() as $connection){
             if($fd != $connection->fd){
-                $server->push($fd, json_encode($broadCast_data));
+                $server->push($connection->fd, json_encode($broadCast_data));
             }
         }
     }
@@ -109,23 +120,36 @@ class AsServer
                 }
                 break;
             case ServerCode::CHAT_BROADCAST;
-                foreach (FdCollector::list() as $connection){
-                    if($fd == $connection->fd){
-                        continue;
+                $this->logger->info('接收到服务端内的广播信息, ');
+                $this->logger->info(json_encode($pushData));
+                $this->logger->info("当前fd:".$fd);
+                $this->logger->info(print_r(FdCollector::list(), true));
+                foreach ($server->connections as $client_fd){
+                    if($fd != $client_fd){
+                        $server->push($client_fd, json_encode($pushData));
                     }
-                    $server->push($fd, $pushData);
                 }
                 break;
             case ServerCode::SERVER_CLIENT_BROADCAST;
                 //不需要广播
                 $is_broadcast = false;
 
+                $this->logger->info('接收到route广播信息, ');
+                $this->logger->info(print_r($params, true));
+
                 //uid和channel
-                $uid = $params['uid'];
-                if($uid){
-                    $fd = $this->userCollect->getFdByUid($uid);
+//                $uid = $params['uid'];
+//                if($uid){
+//                    $fd = $this->userCollect->getFdByUid($uid);
+//                }
+//                $channel = $params['channel'];
+
+                foreach ($server->connections as $client_fd){
+                    if($fd == $client_fd){
+                        continue;
+                    }
+                    $server->push($client_fd, json_encode($pushData));
                 }
-                $channel = $params['channel'];
 
                 break;
             default:
@@ -138,13 +162,15 @@ class AsServer
         }
     }
 
+
+
     public function close(Server $server, int $fd, int $reactorId){
-        $msg = "fd={$fd}的大神, 下线啦!";
+        $msg['data'] = "fd={$fd}的大神, 下线啦!";
         foreach ($server->connections as $client_fd){
             if($fd == $client_fd){
                 continue;
             }
-            $server->push($client_fd, $msg);
+            $server->push($client_fd, json_encode($msg));
         }
     }
 }

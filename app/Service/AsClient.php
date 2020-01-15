@@ -54,7 +54,6 @@ class AsClient
     }
 
     public function initClient(){
-        $this->logger->debug("正在实例化initClient.....");
         /** @var ConfigInterface $config */
         $config = $this->container->get(ConfigInterface::class);
 
@@ -99,47 +98,6 @@ class AsClient
         }catch (\Exception $exception){
             throw new ServiceException('Can not connect Router Server!');
         }
-        // 获取文本数据：$res_msg->data
-
-//        $that = $this;
-//        go(function() use ($im_router_ip, $im_router_port, $im_server, $that){
-//            $that->client = new \Swoole\Coroutine\Http\Client($im_router_ip, $im_router_port);
-//            $ret = $that->client->upgrade("/im-router");
-//            if ($ret) {
-//                $data=[
-//                    'serviceName'=>'IM-SERVER',
-//                    'ip'=>$im_server['ip'],
-//                    'port'=>$im_server['port']
-//                ];
-//
-//                $that->client->push(im_encode(
-//                    ClientCode::REGISTER_FROM_SERVER,
-//                    $data,
-//                    ClientCode::FROM_SERVER_CLIENT
-//                ));
-//
-//                $rec = $that->client->recv();
-//                var_dump($rec);
-//                try{
-//                    $data = json_decode($rec, true);
-//                    if($data['code'] == 200){
-//                        $that->logger->debug(sprintf('Connect Router Server Success.'));
-//                    }else{
-//                        $that->logger->debug(sprintf('Connect Router Server Fail.'));
-//                        throw new ServiceException('Can not connect Router Server!');
-//                    }
-//                }catch (\Exception $exception){
-//                    throw new ServiceException('Can not connect Router Server!');
-//                }
-//
-////                $cli = $that->client;
-////                swoole_timer_tick(3000,function ()use($cli){
-////                    if($cli->errCode==0){
-////                        $cli->push('',WEBSOCKET_OPCODE_PING); //
-////                    }
-////                });
-//            }
-//        });
     }
 
     /**
