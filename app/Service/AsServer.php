@@ -143,12 +143,12 @@ class AsServer
 //                    $fd = $this->userCollect->getFdByUid($uid);
 //                }
 //                $channel = $params['channel'];
-
+                $routeFdList = UserCollect::routerFdList();
                 foreach ($server->connections as $client_fd){
-                    if($fd == $client_fd){
-                        continue;
+                    //不等于route-fd, 和 发送人的uid
+                    if($fd != $client_fd && !in_array($client_fd, $routeFdList)){
+                        $server->push($client_fd, json_encode($pushData));
                     }
-                    $server->push($client_fd, json_encode($pushData));
                 }
 
                 break;

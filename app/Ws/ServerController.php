@@ -67,15 +67,16 @@ class ServerController extends HyperServer implements OnMessageInterface, OnOpen
 //                throw new WebSocketHandeShakeException('sec-websocket-protocol is invalid!');
 //            }
 
+            $fd = $request->fd;
             if(is_array($get) && array_key_exists('from', $get) && $get['from'] == 'im-router'){
                 //
                 var_dump("im-route注册进来了");
+                UserCollect::addRouterFd($fd);
             }else{
                 $data = [
                     'uid' => 10,
                     'username' => 'xiaosan'
                 ];
-                $fd = $request->fd;
                 $data['uid'] = $data['uid']+$fd;
                 $data['username'] = $data['username']."__".(string)$fd;
                 UserCollect::addUserByFd($fd, $data);

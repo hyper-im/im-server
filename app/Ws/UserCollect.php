@@ -26,6 +26,7 @@ class UserCollect
     public static $userInfo = [];
     public static $userInfoFd = [];
 
+    public static $routerFd = [];
     public function joinIm($fd, $data){
 
         $fd = (string)$fd;
@@ -134,5 +135,15 @@ class UserCollect
             return self::$userInfoFd[$fd]['uid'];
         }
         return [];
+    }
+
+    public static function addRouterFd($fd){
+        if(!array_key_exists($fd, self::$routerFd)){
+            self::$userInfo[$fd] = $fd;
+        }
+    }
+
+    public static function routerFdList(){
+        return self::$routerFd;
     }
 }
